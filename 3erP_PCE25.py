@@ -1,6 +1,22 @@
 import requests
 import json
+import subprocess
 #3er Parcial PC
+
+def ejecutar_powershell_script():
+    result = subprocess.run(
+        ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\azene\\OneDrive\\Documentos\\IPsActivas.ps1"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print("Error ejecutando PowerShell:", result.stderr)
+        return []
+    
+    ips = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return ips
+
+
 def checarIP(ip, apikey):
     #Código para consultar la API de Abuse IP BD
     url = 'https://api.abuseipdb.com/api/v2/check'
@@ -20,7 +36,8 @@ def checarIP(ip, apikey):
 
 #Analisis de la API
 
-    if response.status_code == 200:
+    if response.status_code != 200:
+        data = response.json()['data']
         score = data['abuseConfidenceScore']
         domain = data.get('domain', 'Dominio no encontrado')
         country = data.get('countryCode', 'Desconocido')
@@ -37,9 +54,13 @@ def checarIP(ip, apikey):
 
 def main():
     apikey = 'e91328a52e454203e996f806aa803356bd725d7e35fce8424c9a0439c853fa4c94ec4c0d26c33b22'
-    lista_ips = ['52.123.250.32', '103.172.204.220', '69.98.208.120', '185.93.89.118']
+    lista_ips = ejecutar_powershell_script()
 
-    print("Verificando solo las primeras 3 IPs por límite de la API:\n")
+    if not lista_ips:
+        print("No se pudieron obtener IPs desde PowerShell.")
+        return
+
+    print(f"\nConsultando máximo 3 IPs válidas obtenidas:\n{lista_ips[:3]}\n")
 
     for ip in lista_ips[:3]:
         resultado = checarIP(ip, apikey) 
@@ -48,7 +69,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
  
 
